@@ -219,6 +219,10 @@ public class StressProfile implements Serializable
                 {
                     if (columnConfigs.containsKey(col.getName()))
                         continue;
+                        
+                    // For DSE, Don't mess with the Solr internal columns.
+                    if( col.getName().startsWith("_") || col.getName().startsWith("solr_query") )
+                        continue;
 
                     columnConfigs.put(col.getName(), new GeneratorConfig(seedStr + col.getName(), null, null, null));
                 }
@@ -288,6 +292,8 @@ public class StressProfile implements Serializable
                     boolean firstPred = true;
                     for (ColumnMetadata c : tableMetaData.getColumns())
                     {
+                        if( c.getName().startsWith("_") || c.getName().startsWith("solr_query") )
+                            continue;
 
                         if (keyColumns.contains(c))
                         {
@@ -387,10 +393,13 @@ public class StressProfile implements Serializable
             for (ColumnMetadata metadata : tableMetaData.getPartitionKey())
                 partitionKeys.add(new ColumnInfo(metadata.getName(), metadata.getType(), columnConfigs.get(metadata.getName())));
             for (ColumnMetadata metadata : tableMetaData.getClusteringColumns())
-                clusteringColumns.add(new ColumnInfo(metadata.getName(), metadata.getType(), columnConfigs.get(metadata.getName())));
+                if( (metadata.getName().startsWith("_") != true) && (metadata.getName().startsWith("solr_query") != true) )
+                  clusteringColumns.add(new ColumnInfo(metadata.getName(), metadata.getType(), columnConfigs.get(metadata.getName())));
             for (ColumnMetadata metadata : tableMetaData.getColumns())
                 if (!keyColumns.contains(metadata))
-                    valueColumns.add(new ColumnInfo(metadata.getName(), metadata.getType(), columnConfigs.get(metadata.getName())));
+                    if( (metadata.getName().startsWith("_") != true) && (metadata.getName().startsWith("solr_query") != true) )
+                       valueColumns.add(new ColumnInfo(metadata.getName(), metadata.getType(), columnConfigs.get(metadata.getName())));
+        
         }
 
         PartitionGenerator newGenerator()
